@@ -20,7 +20,7 @@ jobs:
         id: lock
         uses: ./
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.LOCK_TOKEN }}
           repository: JustinDFuller/github-action-lock-branch
           branch: main
           lock: true
@@ -29,7 +29,7 @@ jobs:
         id: unlock
         uses: ./
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.LOCK_TOKEN }}
 
       - run: echo "${{ steps.lock.outputs.changed }}"
       - run: echo "${{ steps.lock.outputs.locked }}"
