@@ -21,6 +21,7 @@ jobs:
         uses: ./
         with:
           token: ${{ secrets.LOCK_TOKEN }}
+          owner: JustinDFuller
           repository: JustinDFuller/github-action-lock-branch
           branch: main
           lock: true
