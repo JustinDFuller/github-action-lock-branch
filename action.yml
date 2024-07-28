@@ -1,11 +1,14 @@
 name: "github-action-lock-branch"
 description: "Github Action to Lock or Unlock a Branch"
 inputs:
+  owner:
+    description: "The owner of repository to Lock or Unlock. Inferred from current repository if not provided."
+    required: false
   repository:
-    description: "The repository to Lock or Unlock."
-    required: true
+    description: "The repository to Lock or Unlock. Inferred from current repository if not provided."
+    required: false
   branch:
-    description: "The Branch to Lock or Unlock."
+    description: "The Branch to Lock or Unlock. Inferred from current branch if not provided."
     required: true
   lock:
     description: "To Lock or Unlock (true or false)"

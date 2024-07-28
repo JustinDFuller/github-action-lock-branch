@@ -47,7 +47,7 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, repository, owner, branch, kit, branchProtection, error_1;
+        var token, lock, repository, owner, branch, kit, branchProtection, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -56,6 +56,7 @@ function main() {
                     if (!token) {
                         throw new Error("Expected a token but got: \"".concat(token, "\""));
                     }
+                    lock = core.getBooleanInput("lock");
                     repository = core.getInput("repository");
                     if (!repository) {
                         repository = github.context.repo.repo;
@@ -78,6 +79,7 @@ function main() {
                         }
                         core.notice("No branch provided, using \"".concat(branch, "\""));
                     }
+                    console.log("".concat(lock ? "locking" : "unlocking", " branch=\"").concat(branch, "\" repository=\"").concat(repository, "\" owner=\"").concat(owner, "\""));
                     kit = github.getOctokit(token);
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));

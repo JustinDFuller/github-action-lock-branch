@@ -8,6 +8,8 @@ async function main() {
       throw new Error(`Expected a token but got: "${token}"`);
     }
 
+    const lock = core.getBooleanInput("lock");
+
     let repository = core.getInput("repository");
     if (!repository) {
       repository = github.context.repo.repo;
@@ -33,6 +35,10 @@ async function main() {
 
       core.notice(`No branch provided, using "${branch}"`);
     }
+
+    console.log(
+      `${lock ? "locking" : "unlocking"} branch="${branch}" repository="${repository}" owner="${owner}"`,
+    );
 
     const kit = github.getOctokit(token);
     if (!kit) {
