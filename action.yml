@@ -1,0 +1,31 @@
+name: "github-action-lock-branch"
+description: "Github Action to Lock or Unlock a Branch"
+inputs:
+  branch:
+    description: "The Branch to Lock or Unlock."
+    required: true
+  lock:
+    description: "To Lock or Unlock (true or false)"
+    required: true
+  token:
+    description: "The Personal Access Token (PAT) that gives access to Lock/Unlock the branch."
+    required: true
+outputs:
+  branch:
+    description: "The branch locked or unlocked."
+  locked:
+    description: "True if the branch is locked. False if the branch is unlocked."
+  unlocked:
+    description: "True if the branch is unlocked. False if the branch is locked."
+  changed:
+    description: "True if the branch was changed. False if it remained the same."
+  success:
+    description: "True if the change succeeded or no change happened. False if a failure occured."
+  failure:
+    description: "True if the change did not succeed. False if no failure occured."
+runs:
+  using: "node20"
+  main: "dist/index.js"
+branding:
+  icon: "lock"
+  color: "red"
