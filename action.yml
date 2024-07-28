@@ -1,6 +1,9 @@
 name: "github-action-lock-branch"
 description: "Github Action to Lock or Unlock a Branch"
 inputs:
+  repository:
+    description: "The repository to Lock or Unlock."
+    required: true
   branch:
     description: "The Branch to Lock or Unlock."
     required: true
@@ -11,6 +14,8 @@ inputs:
     description: "The Personal Access Token (PAT) that gives access to Lock/Unlock the branch."
     required: true
 outputs:
+  repoistory:
+    description: "The repository locked or unlocked"
   branch:
     description: "The branch locked or unlocked."
   locked:

@@ -20,19 +20,16 @@ jobs:
         id: lock
         uses: ./
         with:
-          access-token: ${{ secrets.EXAMPLE_TOKEN_FOR_GITHUB_ACTION }}
-          repository-name: JustinDFuller/schedule
-          branch-name: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: JustinDFuller/github-action-lock-branch
+          branch: main
           lock: true
 
       - name: UnLock branch
         id: unlock
         uses: ./
         with:
-          access-token: ${{ secrets.EXAMPLE_TOKEN_FOR_GITHUB_ACTION }}
-          repository-name: JustinDFuller/schedule
-          branch-name: main
-          lock: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - run: echo "${{ steps.lock.outputs.changed }}"
       - run: echo "${{ steps.lock.outputs.locked }}"
