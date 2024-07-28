@@ -45,15 +45,18 @@ async function main() {
       throw new Error(`Failed to initialize octokit: ${kit}`);
     }
 
-    const { data: branchProtection } = await kit.rest.repos.getBranchProtection(
-      {
-        owner,
-        repo: repository,
-        branch,
-      },
-    );
+    try {
+      const { data: branchProtection } =
+        await kit.rest.repos.getBranchProtection({
+          owner,
+          repo: repository,
+          branch,
+        });
 
-    console.log(branchProtection);
+      console.log(branchProtection);
+    } catch (e) {
+      throw new Error(`error retrieving branch protections: ${e.message}`);
+    }
   } catch (error) {
     core.setFailed(error.message);
   }
