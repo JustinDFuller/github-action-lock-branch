@@ -96,7 +96,9 @@ async function main() {
     update.lock_branch = lock;
 
     // @ts-expect-error
-    await kit.rest.repos.updateBranchProtection(update);
+    const response = await kit.rest.repos.updateBranchProtection(update);
+
+    core.notice(`Update response: ${JSON.stringify(response, null, 2)}`);
   } catch (error) {
     core.setFailed(error.message);
   }

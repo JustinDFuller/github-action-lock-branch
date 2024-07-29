@@ -51,7 +51,7 @@ var core = require("@actions/core");
 var github = require("@actions/github");
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, error_1;
+        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, response, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -120,11 +120,10 @@ function main() {
                     }
                     // @ts-expect-error
                     update.lock_branch = lock;
-                    // @ts-expect-error
                     return [4 /*yield*/, kit.rest.repos.updateBranchProtection(update)];
                 case 2:
-                    // @ts-expect-error
-                    _a.sent();
+                    response = _a.sent();
+                    core.notice("Update response: ".concat(JSON.stringify(response, null, 2)));
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _a.sent();
