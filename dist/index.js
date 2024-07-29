@@ -6,17 +6,6 @@
 
 "use strict";
 
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -121,9 +110,17 @@ function main() {
                 case 3:
                     e_1 = _a.sent();
                     throw new Error("error retrieving branch protections: ".concat(e_1.message));
-                case 4: return [4 /*yield*/, kit.rest.repos.updateBranchProtection(__assign(__assign({ owner: owner, repo: repository, branch: branch }, branchProtection), { 
+                case 4: return [4 /*yield*/, kit.rest.repos.updateBranchProtection({
+                        owner: owner,
+                        repo: repository,
+                        branch: branch,
                         // Some of these are not always returned by the GET but are required here.
-                        required_status_checks: branchProtection.required_status_checks || null, enforce_admins: branchProtection.enforce_admins || null, required_pull_request_reviews: branchProtection.required_pull_request_reviews || null, restrictions: branchProtection.restrictions || null, lock_branch: lock }))];
+                        required_status_checks: branchProtection.required_status_checks || null,
+                        enforce_admins: branchProtection.enforce_admins || null,
+                        required_pull_request_reviews: branchProtection.required_pull_request_reviews || null,
+                        restrictions: branchProtection.restrictions || null,
+                        lock_branch: lock,
+                    })];
                 case 5:
                     _a.sent();
                     return [3 /*break*/, 7];
