@@ -33,5 +33,20 @@ jobs:
           token: ${{ secrets.LOCK_TOKEN }}
           lock: false
 
-      - run: echo "${{ steps.lock.outputs }}"
-      - run: echo "${{ steps.unlock.outputs }}"
+      - run: echo "${{ steps.lock.outputs.locked }}"
+      - run: echo "${{ steps.lock.outputs.unlocked }}"
+      - run: echo "${{ steps.lock.outputs.changed }}"
+      - run: echo "${{ steps.lock.outputs.success }}"
+      - run: echo "${{ steps.lock.outputs.failure }}"
+      - run: echo "${{ steps.lock.outputs.owner }}"
+      - run: echo "${{ steps.lock.outputs.repository }}"
+      - run: echo "${{ steps.lock.outputs.branch }}"
+
+      - run: echo "${{ stepa.unlock.outputs.locked }}"
+      - run: echo "${{ stepa.unlock.outputs.unlocked }}"
+      - run: echo "${{ stepa.unlock.outputs.changed }}"
+      - run: echo "${{ stepa.unlock.outputs.success }}"
+      - run: echo "${{ stepa.unlock.outputs.failure }}"
+      - run: echo "${{ stepa.unlock.outputs.owner }}"
+      - run: echo "${{ stepa.unlock.outputs.repository }}"
+      - run: echo "${{ stepa.unlock.outputs.branch }}"

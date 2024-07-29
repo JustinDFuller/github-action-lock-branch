@@ -84,7 +84,7 @@ function main() {
                         }
                         core.notice("No branch provided, using \"".concat(branch, "\""));
                     }
-                    console.log("".concat(lock ? "locking" : "unlocking", " branch=\"").concat(branch, "\" repository=\"").concat(repository, "\" owner=\"").concat(owner, "\""));
+                    core.notice("".concat(lock ? "locking" : "unlocking", " branch=\"").concat(branch, "\" repository=\"").concat(repository, "\" owner=\"").concat(owner, "\""));
                     core.setOutput("branch", branch);
                     core.setOutput("repository", repository);
                     core.setOutput("owner", owner);
@@ -134,11 +134,13 @@ function main() {
                     core.notice("Branch is now locked=".concat((_a = data.lock_branch) === null || _a === void 0 ? void 0 : _a.enabled));
                     core.setOutput("changed", true);
                     core.setOutput("success", true);
+                    core.setOutput("failure", false);
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _b.sent();
                     core.setOutput("changed", false);
                     core.setOutput("success", false);
+                    core.setOutput("failure", true);
                     core.setFailed(error_1.message);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];

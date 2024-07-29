@@ -36,7 +36,7 @@ async function main() {
       core.notice(`No branch provided, using "${branch}"`);
     }
 
-    console.log(
+    core.notice(
       `${lock ? "locking" : "unlocking"} branch="${branch}" repository="${repository}" owner="${owner}"`,
     );
     core.setOutput("branch", branch);
@@ -108,9 +108,11 @@ async function main() {
     core.notice(`Branch is now locked=${data.lock_branch?.enabled}`);
     core.setOutput("changed", true);
     core.setOutput("success", true);
+    core.setOutput("failure", false);
   } catch (error) {
     core.setOutput("changed", false);
     core.setOutput("success", false);
+    core.setOutput("failure", true);
     core.setFailed(error.message);
   }
 }
