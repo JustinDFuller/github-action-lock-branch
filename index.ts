@@ -79,7 +79,7 @@ async function main() {
     for (const key in update) {
       const value = update[key];
 
-      if ("enabled" in value) {
+      if (typeof value === "object" && "enabled" in value) {
         update[key] = value.enabled;
       }
     }

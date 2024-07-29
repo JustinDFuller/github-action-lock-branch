@@ -115,7 +115,7 @@ function main() {
                     update = __assign({ owner: owner, repo: repository, branch: branch }, branchProtection);
                     for (key in update) {
                         value = update[key];
-                        if ("enabled" in value) {
+                        if (typeof value === "object" && "enabled" in value) {
                             update[key] = value.enabled;
                         }
                     }
