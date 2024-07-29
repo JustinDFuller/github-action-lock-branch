@@ -80,6 +80,12 @@ async function main() {
       repo: repository,
       branch,
       ...branchProtection,
+      // Some of these are not always returned by the GET but are required here.
+      required_status_checks: branchProtection.required_status_checks || null,
+      enforce_admins: branchProtection.enforce_admins || null,
+      required_pull_request_reviews:
+        branchProtection.required_pull_request_reviews || null,
+      restrictions: branchProtection.restrictions || null,
       lock_branch: lock,
     });
   } catch (error) {
