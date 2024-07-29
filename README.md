@@ -51,3 +51,20 @@ Here is a demo for inferring the current owner, repo, and branch.
 
 The `token` must be a token with `Write` permissions for `Administration`.
 
+1. Go to `Settings`.
+
+<img src="https://github.com/user-attachments/assets/a496915a-449a-4313-a285-fac3d8899308" width="350px" />
+
+2. Go to `Developer Settings`.
+
+<img src="https://github.com/user-attachments/assets/2f54f566-6eb3-4f59-80ae-57bf4a87f2f3" width="350px" />
+
+3. Go to `Personal Access Tokens` -> `Fine Grained Tokens`.
+
+<img src="https://github.com/user-attachments/assets/d7f930d7-579a-4614-937b-30ed4808d346" width="350px" />
+
+4. Set `Administration` to `Read/Write`.
+   
+<img src="https://github.com/user-attachments/assets/5befc468-2a9b-498f-8e66-15f923fff49d" width="350px" />
+
+
