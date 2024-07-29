@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -40,7 +51,7 @@ var core = require("@actions/core");
 var github = require("@actions/github");
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, error_1;
+        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -94,13 +105,23 @@ function main() {
                         core.notice("Branch is currently locked=".concat(branchProtection.lock_branch.enabled, " which is the same as lock setting requested=").concat(lock, ". Stopping here."));
                         return [2 /*return*/];
                     }
+                    update = __assign({ owner: owner, repo: repository, branch: branch }, branchProtection);
+                    for (key in update) {
+                        value = update[key];
+                        if ("enabled" in value) {
+                            update[key] = value.enabled;
+                        }
+                    }
+                    if (!update.restrictions) {
+                        update.restrictions = null;
+                    }
+                    if (!update.required_status_checks) {
+                        update.required_status_checks = null;
+                    }
                     // @ts-expect-error
-                    return [4 /*yield*/, kit.rest.repos.updateBranchProtection({
-                            owner: owner,
-                            repo: repository,
-                            branch: branch,
-                            lock_branch: lock,
-                        })];
+                    update.lock_branch = lock;
+                    // @ts-expect-error
+                    return [4 /*yield*/, kit.rest.repos.updateBranchProtection(update)];
                 case 2:
                     // @ts-expect-error
                     _a.sent();

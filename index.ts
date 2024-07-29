@@ -69,13 +69,34 @@ async function main() {
       return;
     }
 
-    // @ts-expect-error
-    await kit.rest.repos.updateBranchProtection({
+    const update = {
       owner,
       repo: repository,
       branch,
-      lock_branch: lock,
-    });
+      ...branchProtection,
+    };
+
+    for (const key in update) {
+      const value = update[key];
+
+      if ("enabled" in value) {
+        update[key] = value.enabled;
+      }
+    }
+
+    if (!update.restrictions) {
+      update.restrictions = null;
+    }
+
+    if (!update.required_status_checks) {
+      update.required_status_checks = null;
+    }
+
+    // @ts-expect-error
+    update.lock_branch = lock;
+
+    // @ts-expect-error
+    await kit.rest.repos.updateBranchProtection(update);
   } catch (error) {
     core.setFailed(error.message);
   }
