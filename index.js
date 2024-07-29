@@ -80,10 +80,13 @@ function main() {
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, kit.rest.repos.getBranchProtection({
+                    return [4 /*yield*/, kit.request("GET /repos/{owner}/{repo}/branches/{branch}/protection", {
                             owner: owner,
                             repo: repository,
                             branch: branch,
+                            headers: {
+                                "X-GitHub-Api-Version": "2022-11-28",
+                            },
                         })];
                 case 2:
                     branchProtection = (_a.sent()).data;

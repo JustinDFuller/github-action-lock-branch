@@ -46,12 +46,17 @@ async function main() {
     }
 
     try {
-      const { data: branchProtection } =
-        await kit.rest.repos.getBranchProtection({
+      const { data: branchProtection } = await kit.request(
+        "GET /repos/{owner}/{repo}/branches/{branch}/protection",
+        {
           owner,
           repo: repository,
           branch,
-        });
+          headers: {
+            "X-GitHub-Api-Version": "2022-11-28",
+          },
+        },
+      );
 
       console.log(branchProtection);
     } catch (e) {
