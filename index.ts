@@ -39,6 +39,11 @@ async function main() {
     console.log(
       `${lock ? "locking" : "unlocking"} branch="${branch}" repository="${repository}" owner="${owner}"`,
     );
+    core.setOutput("branch", branch);
+    core.setOutput("repository", repository);
+    core.setOutput("owner", owner);
+    core.setOutput("locked", lock);
+    core.setOutput("unlocked", !lock);
 
     const kit = github.getOctokit(token);
     if (!kit) {
@@ -65,6 +70,8 @@ async function main() {
       core.notice(
         `Branch is currently locked=${branchProtection.lock_branch.enabled} which is the same as lock setting requested=${lock}. Stopping here.`,
       );
+      core.setOutput("changed", false);
+      core.setOutput("success", true);
 
       return;
     }
@@ -96,10 +103,14 @@ async function main() {
     update.lock_branch = lock;
 
     // @ts-expect-error
-    const response = await kit.rest.repos.updateBranchProtection(update);
+    const { data } = await kit.rest.repos.updateBranchProtection(update);
 
-    core.notice(`Update response: ${JSON.stringify(response, null, 2)}`);
+    core.notice(`Branch is now locked=${data.lock_branch?.enabled}`);
+    core.setOutput("changed", true);
+    core.setOutput("success", true);
   } catch (error) {
+    core.setOutput("changed", false);
+    core.setOutput("success", false);
     core.setFailed(error.message);
   }
 }

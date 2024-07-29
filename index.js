@@ -51,11 +51,12 @@ var core = require("@actions/core");
 var github = require("@actions/github");
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, response, error_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, data, error_1;
+        var _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _a.trys.push([0, 3, , 4]);
+                    _b.trys.push([0, 3, , 4]);
                     token = core.getInput("token");
                     if (!token) {
                         throw new Error("Expected a token but got: \"".concat(token, "\""));
@@ -84,6 +85,11 @@ function main() {
                         core.notice("No branch provided, using \"".concat(branch, "\""));
                     }
                     console.log("".concat(lock ? "locking" : "unlocking", " branch=\"").concat(branch, "\" repository=\"").concat(repository, "\" owner=\"").concat(owner, "\""));
+                    core.setOutput("branch", branch);
+                    core.setOutput("repository", repository);
+                    core.setOutput("owner", owner);
+                    core.setOutput("locked", lock);
+                    core.setOutput("unlocked", !lock);
                     kit = github.getOctokit(token);
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));
@@ -94,7 +100,7 @@ function main() {
                             branch: branch,
                         })];
                 case 1:
-                    branchProtection = (_a.sent()).data;
+                    branchProtection = (_b.sent()).data;
                     if (!branchProtection) {
                         throw new Error("Branch protection not found.");
                     }
@@ -103,6 +109,8 @@ function main() {
                     }
                     if (branchProtection.lock_branch.enabled === lock) {
                         core.notice("Branch is currently locked=".concat(branchProtection.lock_branch.enabled, " which is the same as lock setting requested=").concat(lock, ". Stopping here."));
+                        core.setOutput("changed", false);
+                        core.setOutput("success", true);
                         return [2 /*return*/];
                     }
                     update = __assign({ owner: owner, repo: repository, branch: branch }, branchProtection);
@@ -122,11 +130,15 @@ function main() {
                     update.lock_branch = lock;
                     return [4 /*yield*/, kit.rest.repos.updateBranchProtection(update)];
                 case 2:
-                    response = _a.sent();
-                    core.notice("Update response: ".concat(JSON.stringify(response, null, 2)));
+                    data = (_b.sent()).data;
+                    core.notice("Branch is now locked=".concat((_a = data.lock_branch) === null || _a === void 0 ? void 0 : _a.enabled));
+                    core.setOutput("changed", true);
+                    core.setOutput("success", true);
                     return [3 /*break*/, 4];
                 case 3:
-                    error_1 = _a.sent();
+                    error_1 = _b.sent();
+                    core.setOutput("changed", false);
+                    core.setOutput("success", false);
                     core.setFailed(error_1.message);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];

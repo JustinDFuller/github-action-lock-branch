@@ -17,7 +17,7 @@ inputs:
     description: "The Personal Access Token (PAT) that gives access to Lock/Unlock the branch."
     required: true
 outputs:
-  repoistory:
+  repository:
     description: "The repository locked or unlocked"
   branch:
     description: "The branch locked or unlocked."
