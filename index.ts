@@ -45,23 +45,43 @@ async function main() {
       throw new Error(`Failed to initialize octokit: ${kit}`);
     }
 
-    try {
-      const { data: branchProtection } = await kit.request(
-        "GET /repos/{owner}/{repo}/branches/{branch}/protection",
-        {
-          owner,
-          repo: repository,
-          branch,
-          headers: {
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        },
-      );
+    let branchProtection;
 
-      console.log(branchProtection);
+    try {
+      const { data } = await kit.rest.repos.getBranchProtection({
+        owner,
+        repo: repository,
+        branch,
+      });
+
+      if (!data) {
+        throw new Error("Branch protection not found.");
+      }
+
+      if (!data.lock_branch) {
+        throw new Error("Lock Branch Setting not found.");
+      }
+
+      if (data.lock_branch.enabled === lock) {
+        core.notice(
+          `Branch is currently locked=${data.lock_branch.enabled} which is the same as lock setting requested=${lock}. Stopping here.`,
+        );
+
+        return;
+      }
+
+      branchProtection = data;
     } catch (e) {
       throw new Error(`error retrieving branch protections: ${e.message}`);
     }
+
+    await kit.rest.repos.updateBranchProtection({
+      owner,
+      repo: repository,
+      branch,
+      ...branchProtection,
+      lock_branch: lock,
+    });
   } catch (error) {
     core.setFailed(error.message);
   }

@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -40,11 +51,11 @@ var core = require("@actions/core");
 var github = require("@actions/github");
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, e_1, error_1;
+        var token, lock, repository, owner, branch, kit, branchProtection, data, e_1, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 5, , 6]);
+                    _a.trys.push([0, 6, , 7]);
                     token = core.getInput("token");
                     if (!token) {
                         throw new Error("Expected a token but got: \"".concat(token, "\""));
@@ -77,30 +88,41 @@ function main() {
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));
                     }
+                    branchProtection = void 0;
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, kit.request("GET /repos/{owner}/{repo}/branches/{branch}/protection", {
+                    return [4 /*yield*/, kit.rest.repos.getBranchProtection({
                             owner: owner,
                             repo: repository,
                             branch: branch,
-                            headers: {
-                                "X-GitHub-Api-Version": "2022-11-28",
-                            },
                         })];
                 case 2:
-                    branchProtection = (_a.sent()).data;
-                    console.log(branchProtection);
+                    data = (_a.sent()).data;
+                    if (!data) {
+                        throw new Error("Branch protection not found.");
+                    }
+                    if (!data.lock_branch) {
+                        throw new Error("Lock Branch Setting not found.");
+                    }
+                    if (data.lock_branch.enabled === lock) {
+                        core.notice("Branch is currently locked=".concat(data.lock_branch.enabled, " which is the same as lock setting requested=").concat(lock, ". Stopping here."));
+                        return [2 /*return*/];
+                    }
+                    branchProtection = data;
                     return [3 /*break*/, 4];
                 case 3:
                     e_1 = _a.sent();
                     throw new Error("error retrieving branch protections: ".concat(e_1.message));
-                case 4: return [3 /*break*/, 6];
+                case 4: return [4 /*yield*/, kit.rest.repos.updateBranchProtection(__assign(__assign({ owner: owner, repo: repository, branch: branch }, branchProtection), { lock_branch: lock }))];
                 case 5:
+                    _a.sent();
+                    return [3 /*break*/, 7];
+                case 6:
                     error_1 = _a.sent();
                     core.setFailed(error_1.message);
-                    return [3 /*break*/, 6];
-                case 6: return [2 /*return*/];
+                    return [3 /*break*/, 7];
+                case 7: return [2 /*return*/];
             }
         });
     });
