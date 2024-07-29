@@ -45,46 +45,35 @@ async function main() {
       throw new Error(`Failed to initialize octokit: ${kit}`);
     }
 
-    let branchProtection;
-
-    try {
-      const { data } = await kit.rest.repos.getBranchProtection({
+    const { data: branchProtection } = await kit.rest.repos.getBranchProtection(
+      {
         owner,
         repo: repository,
         branch,
-      });
+      },
+    );
 
-      if (!data) {
-        throw new Error("Branch protection not found.");
-      }
-
-      if (!data.lock_branch) {
-        throw new Error("Lock Branch Setting not found.");
-      }
-
-      if (data.lock_branch.enabled === lock) {
-        core.notice(
-          `Branch is currently locked=${data.lock_branch.enabled} which is the same as lock setting requested=${lock}. Stopping here.`,
-        );
-
-        return;
-      }
-
-      branchProtection = data;
-    } catch (e) {
-      throw new Error(`error retrieving branch protections: ${e.message}`);
+    if (!branchProtection) {
+      throw new Error("Branch protection not found.");
     }
 
+    if (!branchProtection.lock_branch) {
+      throw new Error("Lock Branch Setting not found.");
+    }
+
+    if (branchProtection.lock_branch.enabled === lock) {
+      core.notice(
+        `Branch is currently locked=${branchProtection.lock_branch.enabled} which is the same as lock setting requested=${lock}. Stopping here.`,
+      );
+
+      return;
+    }
+
+    // @ts-expect-error
     await kit.rest.repos.updateBranchProtection({
       owner,
       repo: repository,
       branch,
-      // Some of these are not always returned by the GET but are required here.
-      required_status_checks: branchProtection.required_status_checks || null,
-      enforce_admins: branchProtection.enforce_admins || null,
-      required_pull_request_reviews:
-        branchProtection.required_pull_request_reviews || null,
-      restrictions: branchProtection.restrictions || null,
       lock_branch: lock,
     });
   } catch (error) {

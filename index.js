@@ -40,11 +40,11 @@ var core = require("@actions/core");
 var github = require("@actions/github");
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, data, e_1, error_1;
+        var token, lock, repository, owner, branch, kit, branchProtection, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 6, , 7]);
+                    _a.trys.push([0, 3, , 4]);
                     token = core.getInput("token");
                     if (!token) {
                         throw new Error("Expected a token but got: \"".concat(token, "\""));
@@ -77,51 +77,39 @@ function main() {
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));
                     }
-                    branchProtection = void 0;
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
                     return [4 /*yield*/, kit.rest.repos.getBranchProtection({
                             owner: owner,
                             repo: repository,
                             branch: branch,
                         })];
-                case 2:
-                    data = (_a.sent()).data;
-                    if (!data) {
+                case 1:
+                    branchProtection = (_a.sent()).data;
+                    if (!branchProtection) {
                         throw new Error("Branch protection not found.");
                     }
-                    if (!data.lock_branch) {
+                    if (!branchProtection.lock_branch) {
                         throw new Error("Lock Branch Setting not found.");
                     }
-                    if (data.lock_branch.enabled === lock) {
-                        core.notice("Branch is currently locked=".concat(data.lock_branch.enabled, " which is the same as lock setting requested=").concat(lock, ". Stopping here."));
+                    if (branchProtection.lock_branch.enabled === lock) {
+                        core.notice("Branch is currently locked=".concat(branchProtection.lock_branch.enabled, " which is the same as lock setting requested=").concat(lock, ". Stopping here."));
                         return [2 /*return*/];
                     }
-                    branchProtection = data;
+                    // @ts-expect-error
+                    return [4 /*yield*/, kit.rest.repos.updateBranchProtection({
+                            owner: owner,
+                            repo: repository,
+                            branch: branch,
+                            lock_branch: lock,
+                        })];
+                case 2:
+                    // @ts-expect-error
+                    _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    e_1 = _a.sent();
-                    throw new Error("error retrieving branch protections: ".concat(e_1.message));
-                case 4: return [4 /*yield*/, kit.rest.repos.updateBranchProtection({
-                        owner: owner,
-                        repo: repository,
-                        branch: branch,
-                        // Some of these are not always returned by the GET but are required here.
-                        required_status_checks: branchProtection.required_status_checks || null,
-                        enforce_admins: branchProtection.enforce_admins || null,
-                        required_pull_request_reviews: branchProtection.required_pull_request_reviews || null,
-                        restrictions: branchProtection.restrictions || null,
-                        lock_branch: lock,
-                    })];
-                case 5:
-                    _a.sent();
-                    return [3 /*break*/, 7];
-                case 6:
                     error_1 = _a.sent();
                     core.setFailed(error_1.message);
-                    return [3 /*break*/, 7];
-                case 7: return [2 /*return*/];
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     });
