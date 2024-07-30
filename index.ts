@@ -58,6 +58,10 @@ async function main() {
       },
     );
 
+    core.debug(
+      `Branch Protection JSON: ${JSON.stringify(branchProtection, null, 2)}`,
+    );
+
     if (!branchProtection) {
       throw new Error("Branch protection not found.");
     }
@@ -97,13 +101,20 @@ async function main() {
 
     if (!update.required_status_checks) {
       update.required_status_checks = null;
+    } else if (update.required_status_checks.contexts) {
+      // Obsolete setting returned by GET but not allowed in POST
+      update.required_status_checks.contexts = null;
     }
 
     // @ts-expect-error
     update.lock_branch = lock;
 
+    core.debug(`Update JSON: ${JSON.stringify(update, null, 2)}`);
+
     // @ts-expect-error
     const { data } = await kit.rest.repos.updateBranchProtection(update);
+
+    core.debug(`Update Response JSON: ${JSON.stringify(data, null, 2)}`);
 
     core.notice(`Branch is now locked=${data.lock_branch?.enabled}`);
     core.setOutput("changed", true);

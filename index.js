@@ -101,6 +101,7 @@ function main() {
                         })];
                 case 1:
                     branchProtection = (_b.sent()).data;
+                    core.debug("Branch Protection JSON: ".concat(JSON.stringify(branchProtection, null, 2)));
                     if (!branchProtection) {
                         throw new Error("Branch protection not found.");
                     }
@@ -126,11 +127,17 @@ function main() {
                     if (!update.required_status_checks) {
                         update.required_status_checks = null;
                     }
+                    else if (update.required_status_checks.contexts) {
+                        // Obsolete setting returned by GET but not allowed in POST
+                        update.required_status_checks.contexts = null;
+                    }
                     // @ts-expect-error
                     update.lock_branch = lock;
+                    core.debug("Update JSON: ".concat(JSON.stringify(update, null, 2)));
                     return [4 /*yield*/, kit.rest.repos.updateBranchProtection(update)];
                 case 2:
                     data = (_b.sent()).data;
+                    core.debug("Update Response JSON: ".concat(JSON.stringify(data, null, 2)));
                     core.notice("Branch is now locked=".concat((_a = data.lock_branch) === null || _a === void 0 ? void 0 : _a.enabled));
                     core.setOutput("changed", true);
                     core.setOutput("success", true);
