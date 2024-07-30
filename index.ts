@@ -58,7 +58,9 @@ async function main() {
       },
     );
 
-    core.debug(`Branch Protection JSON: ${JSON.stringify(branchProtection, null, 2)}`);
+    core.debug(
+      `Branch Protection JSON: ${JSON.stringify(branchProtection, null, 2)}`,
+    );
 
     if (!branchProtection) {
       throw new Error("Branch protection not found.");
