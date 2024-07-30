@@ -103,7 +103,15 @@ async function main() {
       update.required_status_checks = null;
     } else if (update.required_status_checks.contexts) {
       // Obsolete setting returned by GET but not allowed in POST
-      update.required_status_checks.contexts = null;
+      update.required_status_checks.contexts = [];
+    }
+
+    if (update.required_status_checks.checks) {
+      for (const check of update.required_status_checks.checks) {
+        if (check.app_id == null) {
+          delete check.app_id;
+        }
+      }
     }
 
     // @ts-expect-error

@@ -58,12 +58,12 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, data, error_1;
-        var _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, _i, _a, check, data, error_1;
+        var _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
-                    _b.trys.push([0, 3, , 4]);
+                    _c.trys.push([0, 3, , 4]);
                     token = core.getInput("token");
                     if (!token) {
                         throw new Error("Expected a token but got: \"".concat(token, "\""));
@@ -107,7 +107,7 @@ function main() {
                             branch: branch,
                         })];
                 case 1:
-                    branchProtection = (_b.sent()).data;
+                    branchProtection = (_c.sent()).data;
                     core.debug("Branch Protection JSON: ".concat(JSON.stringify(branchProtection, null, 2)));
                     if (!branchProtection) {
                         throw new Error("Branch protection not found.");
@@ -136,22 +136,30 @@ function main() {
                     }
                     else if (update.required_status_checks.contexts) {
                         // Obsolete setting returned by GET but not allowed in POST
-                        update.required_status_checks.contexts = null;
+                        update.required_status_checks.contexts = [];
+                    }
+                    if (update.required_status_checks.checks) {
+                        for (_i = 0, _a = update.required_status_checks.checks; _i < _a.length; _i++) {
+                            check = _a[_i];
+                            if (check.app_id == null) {
+                                delete check.app_id;
+                            }
+                        }
                     }
                     // @ts-expect-error
                     update.lock_branch = lock;
                     core.debug("Update JSON: ".concat(JSON.stringify(update, null, 2)));
                     return [4 /*yield*/, kit.rest.repos.updateBranchProtection(update)];
                 case 2:
-                    data = (_b.sent()).data;
+                    data = (_c.sent()).data;
                     core.debug("Update Response JSON: ".concat(JSON.stringify(data, null, 2)));
-                    core.notice("Branch is now locked=".concat((_a = data.lock_branch) === null || _a === void 0 ? void 0 : _a.enabled));
+                    core.notice("Branch is now locked=".concat((_b = data.lock_branch) === null || _b === void 0 ? void 0 : _b.enabled));
                     core.setOutput("changed", true);
                     core.setOutput("success", true);
                     core.setOutput("failure", false);
                     return [3 /*break*/, 4];
                 case 3:
-                    error_1 = _b.sent();
+                    error_1 = _c.sent();
                     core.setOutput("changed", false);
                     core.setOutput("success", false);
                     core.setOutput("failure", true);
