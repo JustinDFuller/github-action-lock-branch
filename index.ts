@@ -102,6 +102,7 @@ async function main() {
     if (!update.required_status_checks) {
       update.required_status_checks = null;
     } else if (update.required_status_checks.contexts) {
+      // Obsolete setting returned by GET but not allowed in POST
       update.required_status_checks.contexts = [];
     }
 
