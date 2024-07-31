@@ -87,13 +87,7 @@ async function main() {
       ...branchProtection,
     };
 
-    for (const key in update) {
-      const value = update[key];
-
-      if (typeof value === "object" && "enabled" in value) {
-        update[key] = value.enabled;
-      }
-    }
+    normalize(update);
 
     if (!update.restrictions) {
       update.restrictions = null;
@@ -133,6 +127,37 @@ async function main() {
     core.setOutput("success", false);
     core.setOutput("failure", true);
     core.setFailed(error.message);
+  }
+}
+
+// The response for GET /repos/{owner}/{repo}/branches/{branch}/protection
+// Cannot be passed directly back into the PUT request to /repos/{owner}/{repo}/branches/{branch}/protection.
+// Instead, we need to normalize the JSON to make it compliant with the PUT request.
+function normalize(obj) {
+  for (const key in obj) {
+    const value = obj[key];
+    // 1. Remove all extra _url keys.
+    if (typeof value === "object") {
+      if (key.endsWith("_url")) {
+        delete obj[key];
+        // 2. Convert enabled to boolean.
+      } else if ("enabled" in value) {
+        obj[key] = value.enabled;
+        // 3. Remove empty arrays.
+      } else if (Array.isArray(value)) {
+        if (value.length === 0) {
+          delete obj[key];
+        }
+      }
+
+      // 4. Remove empty objects.
+      if (Object.keys(value).length === 0) {
+        delete obj[key];
+      }
+
+      // recurse
+      normalize(value);
+    }
   }
 }
 

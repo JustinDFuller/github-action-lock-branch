@@ -58,7 +58,7 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, update, key, value, _i, _a, check, data, error_1;
+        var token, lock, repository, owner, branch, kit, branchProtection, update, _i, _a, check, data, error_1;
         var _b;
         return __generator(this, function (_c) {
             switch (_c.label) {
@@ -122,12 +122,7 @@ function main() {
                         return [2 /*return*/];
                     }
                     update = __assign({ owner: owner, repo: repository, branch: branch }, branchProtection);
-                    for (key in update) {
-                        value = update[key];
-                        if (typeof value === "object" && "enabled" in value) {
-                            update[key] = value.enabled;
-                        }
-                    }
+                    normalize(update);
                     if (!update.restrictions) {
                         update.restrictions = null;
                     }
@@ -169,6 +164,36 @@ function main() {
             }
         });
     });
+}
+// The response for GET /repos/{owner}/{repo}/branches/{branch}/protection
+// Cannot be passed directly back into the PUT request to /repos/{owner}/{repo}/branches/{branch}/protection.
+// Instead, we need to normalize the JSON to make it compliant with the PUT request.
+function normalize(obj) {
+    for (var key in obj) {
+        var value = obj[key];
+        // 1. Remove all extra _url keys.
+        if (typeof value === "object") {
+            if (key.endsWith("_url")) {
+                delete obj[key];
+                // 2. Convert enabled to boolean.
+            }
+            else if ("enabled" in value) {
+                obj[key] = value.enabled;
+                // 3. Remove empty arrays.
+            }
+            else if (Array.isArray(value)) {
+                if (value.length === 0) {
+                    delete obj[key];
+                }
+            }
+            // 4. Remove empty objects.
+            if (Object.keys(value).length === 0) {
+                delete obj[key];
+            }
+            // recurse
+            normalize(value);
+        }
+    }
 }
 main();
 
