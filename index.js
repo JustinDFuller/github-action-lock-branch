@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -51,12 +40,11 @@ var core = require("@actions/core");
 var github = require("@actions/github");
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, branchProtection, update, _i, _a, check, data, error_1;
-        var _b;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var token, lock, repository, owner, branch, kit, response, error_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
-                    _c.trys.push([0, 3, , 4]);
+                    _a.trys.push([0, 2, , 3]);
                     token = core.getInput("token");
                     if (!token) {
                         throw new Error("Expected a token but got: \"".concat(token, "\""));
@@ -94,98 +82,21 @@ function main() {
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));
                     }
-                    return [4 /*yield*/, kit.rest.repos.getBranchProtection({
-                            owner: owner,
-                            repo: repository,
-                            branch: branch,
-                        })];
+                    return [4 /*yield*/, kit.graphql("query getBranchProtections {\n  repository(owner: \"".concat(owner, "\", name: ").concat(repository, "){\n    branchProtectionRules {\n      nodes{\n        lockBranch\n        id\n        matchingRefs{\n          nodes{\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}"))];
                 case 1:
-                    branchProtection = (_c.sent()).data;
-                    core.debug("Branch Protection JSON: ".concat(JSON.stringify(branchProtection, null, 2)));
-                    if (!branchProtection) {
-                        throw new Error("Branch protection not found.");
-                    }
-                    if (!branchProtection.lock_branch) {
-                        throw new Error("Lock Branch Setting not found.");
-                    }
-                    if (branchProtection.lock_branch.enabled === lock) {
-                        core.notice("Branch is currently locked=".concat(branchProtection.lock_branch.enabled, " which is the same as lock setting requested=").concat(lock, ". Stopping here."));
-                        core.setOutput("changed", false);
-                        core.setOutput("success", true);
-                        return [2 /*return*/];
-                    }
-                    update = __assign({ owner: owner, repo: repository, branch: branch }, branchProtection);
-                    normalize(update);
-                    if (!update.restrictions) {
-                        update.restrictions = null;
-                    }
-                    if (!update.required_status_checks) {
-                        update.required_status_checks = null;
-                    }
-                    else if (update.required_status_checks.contexts) {
-                        // Obsolete setting returned by GET but not allowed in POST
-                        update.required_status_checks.contexts = [];
-                    }
-                    if (update.required_status_checks.checks) {
-                        for (_i = 0, _a = update.required_status_checks.checks; _i < _a.length; _i++) {
-                            check = _a[_i];
-                            if (check.app_id == null) {
-                                delete check.app_id;
-                            }
-                        }
-                    }
-                    // @ts-expect-error
-                    update.lock_branch = lock;
-                    core.debug("Update JSON: ".concat(JSON.stringify(update, null, 2)));
-                    return [4 /*yield*/, kit.rest.repos.updateBranchProtection(update)];
+                    response = _a.sent();
+                    core.notice("Branch Protection JSON: ".concat(JSON.stringify(response, null, 2)));
+                    return [3 /*break*/, 3];
                 case 2:
-                    data = (_c.sent()).data;
-                    core.debug("Update Response JSON: ".concat(JSON.stringify(data, null, 2)));
-                    core.notice("Branch is now locked=".concat((_b = data.lock_branch) === null || _b === void 0 ? void 0 : _b.enabled));
-                    core.setOutput("changed", true);
-                    core.setOutput("success", true);
-                    core.setOutput("failure", false);
-                    return [3 /*break*/, 4];
-                case 3:
-                    error_1 = _c.sent();
+                    error_1 = _a.sent();
                     core.setOutput("changed", false);
                     core.setOutput("success", false);
                     core.setOutput("failure", true);
                     core.setFailed(error_1.message);
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
             }
         });
     });
-}
-// The response for GET /repos/{owner}/{repo}/branches/{branch}/protection
-// Cannot be passed directly back into the PUT request to /repos/{owner}/{repo}/branches/{branch}/protection.
-// Instead, we need to normalize the JSON to make it compliant with the PUT request.
-function normalize(obj) {
-    for (var key in obj) {
-        var value = obj[key];
-        // 1. Remove all extra _url keys.
-        if (typeof value === "object") {
-            if (key.endsWith("_url")) {
-                delete obj[key];
-                // 2. Convert enabled to boolean.
-            }
-            else if (value != null && "enabled" in value) {
-                obj[key] = value.enabled;
-                // 3. Remove empty arrays.
-            }
-            else if (Array.isArray(value)) {
-                if (value.length === 0) {
-                    delete obj[key];
-                }
-            }
-            // 4. Remove empty objects.
-            if (value !== null && Object.keys(value).length === 0) {
-                delete obj[key];
-            }
-            // recurse
-            normalize(value);
-        }
-    }
 }
 main();
