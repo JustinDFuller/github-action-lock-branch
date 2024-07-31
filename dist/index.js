@@ -47,11 +47,11 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, query, response, error_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var token, lock, repository, owner, branch_1, kit, query, response, alreadyLocked, branchProtectionId, _i, _a, rule, data, error_1;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _a.trys.push([0, 2, , 3]);
+                    _b.trys.push([0, 3, , 4]);
                     token = core.getInput("token");
                     if (!token) {
                         throw new Error("Expected a token but got: \"".concat(token, "\""));
@@ -67,20 +67,20 @@ function main() {
                         owner = github.context.repo.owner;
                         core.notice("No owner provided, using \"".concat(owner, "\""));
                     }
-                    branch = core.getInput("branch");
-                    if (!branch) {
-                        branch = github.context.ref;
+                    branch_1 = core.getInput("branch");
+                    if (!branch_1) {
+                        branch_1 = github.context.ref;
                         // GitHub Actions ref can be a tag or branch
-                        if (branch.startsWith("refs/heads/")) {
-                            branch = branch.replace("refs/heads/", "");
+                        if (branch_1.startsWith("refs/heads/")) {
+                            branch_1 = branch_1.replace("refs/heads/", "");
                         }
-                        else if (branch.startsWith("refs/tags/")) {
-                            branch = branch.replace("refs/tags/", "");
+                        else if (branch_1.startsWith("refs/tags/")) {
+                            branch_1 = branch_1.replace("refs/tags/", "");
                         }
-                        core.notice("No branch provided, using \"".concat(branch, "\""));
+                        core.notice("No branch provided, using \"".concat(branch_1, "\""));
                     }
-                    core.notice("".concat(lock ? "locking" : "unlocking", " branch=\"").concat(branch, "\" repository=\"").concat(repository, "\" owner=\"").concat(owner, "\""));
-                    core.setOutput("branch", branch);
+                    core.notice("".concat(lock ? "locking" : "unlocking", " branch=\"").concat(branch_1, "\" repository=\"").concat(repository, "\" owner=\"").concat(owner, "\""));
+                    core.setOutput("branch", branch_1);
                     core.setOutput("repository", repository);
                     core.setOutput("owner", owner);
                     core.setOutput("locked", lock);
@@ -89,21 +89,71 @@ function main() {
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));
                     }
-                    query = "query getBranchProtections {\n  repository(owner: \"".concat(owner, "\", name: \"").concat(repository, "\"){\n    branchProtectionRules(first: 100){\n      nodes{\n        lockBranch\n        id\n        matchingRefs(first: 100){\n          nodes{\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}");
-                    core.notice(query);
-                    return [4 /*yield*/, kit.graphql(query)];
+                    query = "query getBranchProtections($owner: String!, $repository: String!){\n  repository(owner: $owner, name: $repository){\n    branchProtectionRules(first: 100){\n      nodes{\n        lockBranch\n        id\n        matchingRefs(first: 100){\n          nodes{\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}";
+                    core.debug("Query getBranchProtections: ".concat(query, " ").concat(owner, " ").concat(repository));
+                    return [4 /*yield*/, kit.graphql(query, {
+                            owner: owner,
+                            repository: repository,
+                        })];
                 case 1:
-                    response = _a.sent();
-                    core.notice("Branch Protection JSON: ".concat(JSON.stringify(response, null, 2)));
-                    return [3 /*break*/, 3];
+                    response = _b.sent();
+                    core.debug("Branch Protection JSON: ".concat(JSON.stringify(response, null, 2)));
+                    if (!response) {
+                        throw new Error("Branch protection not found.");
+                    }
+                    if (!response.repository) {
+                        throw new Error("Repository not found.");
+                    }
+                    if (!response.repository.branchProtectionRules) {
+                        throw new Error("Branch protection rules not found.");
+                    }
+                    if (!response.repository.branchProtectionRules.nodes) {
+                        throw new Error("Branch protection rules nodes not found.");
+                    }
+                    if (!response.repository.branchProtectionRules.nodes.length) {
+                        throw new Error("Branch protection rules nodes empty.");
+                    }
+                    alreadyLocked = void 0;
+                    branchProtectionId = void 0;
+                    for (_i = 0, _a = response.repository.branchProtectionRules.nodes; _i < _a.length; _i++) {
+                        rule = _a[_i];
+                        if (rule.matchingRefs.nodes.some(function (n) { return n.name === branch_1; })) {
+                            if (!("lockBranch" in rule)) {
+                                throw new Error("Lock Branch Setting not found.");
+                            }
+                            if (!("id" in rule)) {
+                                throw new Error("Branch Protection ID not found.");
+                            }
+                            alreadyLocked = rule.lockBranch;
+                            branchProtectionId = rule.id;
+                            break;
+                        }
+                    }
+                    if (!branchProtectionId) {
+                        throw new Error("Branch protection ID not found.");
+                    }
+                    if (alreadyLocked === lock) {
+                        core.notice("Branch is currently locked=".concat(alreadyLocked, " which is the same as lock setting requested=").concat(lock, ". Stopping here."));
+                        core.setOutput("changed", false);
+                        core.setOutput("success", true);
+                        return [2 /*return*/];
+                    }
+                    return [4 /*yield*/, kit.graphql("\n    mutation updateBranchProtections {\n  updateBranchProtectionRule(input: { lockBranch: ".concat(lock, ", branchProtectionRuleId: \"").concat(branchProtectionId, "\" }) {\n    branchProtectionRule{\n      lockBranch\n      id\n    }\n  }\n}\n    "))];
                 case 2:
-                    error_1 = _a.sent();
+                    data = _b.sent();
+                    core.debug("Update Response JSON: ".concat(JSON.stringify(data, null, 2)));
+                    core.setOutput("changed", true);
+                    core.setOutput("success", true);
+                    core.setOutput("failure", false);
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_1 = _b.sent();
                     core.setOutput("changed", false);
                     core.setOutput("success", false);
                     core.setOutput("failure", true);
                     core.setFailed(error_1.message);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     });
@@ -2312,7 +2362,7 @@ module.exports = __toCommonJS(dist_src_exports);
 var import_universal_user_agent = __nccwpck_require__(5030);
 var import_before_after_hook = __nccwpck_require__(3682);
 var import_request = __nccwpck_require__(6234);
-var import_graphql = __nccwpck_require__(8467);
+var import_graphql = __nccwpck_require__(6442);
 var import_auth_token = __nccwpck_require__(334);
 
 // pkg/dist-src/version.js
@@ -2443,6 +2493,164 @@ var Octokit = class {
     }
   }
 };
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
+
+
+/***/ }),
+
+/***/ 6442:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// pkg/dist-src/index.js
+var dist_src_exports = {};
+__export(dist_src_exports, {
+  GraphqlResponseError: () => GraphqlResponseError,
+  graphql: () => graphql2,
+  withCustomRequest: () => withCustomRequest
+});
+module.exports = __toCommonJS(dist_src_exports);
+var import_request3 = __nccwpck_require__(6234);
+var import_universal_user_agent = __nccwpck_require__(5030);
+
+// pkg/dist-src/version.js
+var VERSION = "7.1.0";
+
+// pkg/dist-src/with-defaults.js
+var import_request2 = __nccwpck_require__(6234);
+
+// pkg/dist-src/graphql.js
+var import_request = __nccwpck_require__(6234);
+
+// pkg/dist-src/error.js
+function _buildMessageForResponseErrors(data) {
+  return `Request failed due to following response errors:
+` + data.errors.map((e) => ` - ${e.message}`).join("\n");
+}
+var GraphqlResponseError = class extends Error {
+  constructor(request2, headers, response) {
+    super(_buildMessageForResponseErrors(response));
+    this.request = request2;
+    this.headers = headers;
+    this.response = response;
+    this.name = "GraphqlResponseError";
+    this.errors = response.errors;
+    this.data = response.data;
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+};
+
+// pkg/dist-src/graphql.js
+var NON_VARIABLE_OPTIONS = [
+  "method",
+  "baseUrl",
+  "url",
+  "headers",
+  "request",
+  "query",
+  "mediaType"
+];
+var FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
+var GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
+function graphql(request2, query, options) {
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(
+        new Error(`[@octokit/graphql] "query" cannot be used as variable name`)
+      );
+    }
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
+        continue;
+      return Promise.reject(
+        new Error(
+          `[@octokit/graphql] "${key}" cannot be used as variable name`
+        )
+      );
+    }
+  }
+  const parsedOptions = typeof query === "string" ? Object.assign({ query }, options) : query;
+  const requestOptions = Object.keys(
+    parsedOptions
+  ).reduce((result, key) => {
+    if (NON_VARIABLE_OPTIONS.includes(key)) {
+      result[key] = parsedOptions[key];
+      return result;
+    }
+    if (!result.variables) {
+      result.variables = {};
+    }
+    result.variables[key] = parsedOptions[key];
+    return result;
+  }, {});
+  const baseUrl = parsedOptions.baseUrl || request2.endpoint.DEFAULTS.baseUrl;
+  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
+    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
+  }
+  return request2(requestOptions).then((response) => {
+    if (response.data.errors) {
+      const headers = {};
+      for (const key of Object.keys(response.headers)) {
+        headers[key] = response.headers[key];
+      }
+      throw new GraphqlResponseError(
+        requestOptions,
+        headers,
+        response.data
+      );
+    }
+    return response.data.data;
+  });
+}
+
+// pkg/dist-src/with-defaults.js
+function withDefaults(request2, newDefaults) {
+  const newRequest = request2.defaults(newDefaults);
+  const newApi = (query, options) => {
+    return graphql(newRequest, query, options);
+  };
+  return Object.assign(newApi, {
+    defaults: withDefaults.bind(null, newRequest),
+    endpoint: newRequest.endpoint
+  });
+}
+
+// pkg/dist-src/index.js
+var graphql2 = withDefaults(import_request3.request, {
+  headers: {
+    "user-agent": `octokit-graphql.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`
+  },
+  method: "POST",
+  url: "/graphql"
+});
+function withCustomRequest(customRequest) {
+  return withDefaults(customRequest, {
+    method: "POST",
+    url: "/graphql"
+  });
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (0);
 
@@ -2827,164 +3035,6 @@ function withDefaults(oldDefaults, newDefaults) {
 
 // pkg/dist-src/index.js
 var endpoint = withDefaults(null, DEFAULTS);
-// Annotate the CommonJS export names for ESM import in node:
-0 && (0);
-
-
-/***/ }),
-
-/***/ 8467:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// pkg/dist-src/index.js
-var dist_src_exports = {};
-__export(dist_src_exports, {
-  GraphqlResponseError: () => GraphqlResponseError,
-  graphql: () => graphql2,
-  withCustomRequest: () => withCustomRequest
-});
-module.exports = __toCommonJS(dist_src_exports);
-var import_request3 = __nccwpck_require__(6234);
-var import_universal_user_agent = __nccwpck_require__(5030);
-
-// pkg/dist-src/version.js
-var VERSION = "7.1.0";
-
-// pkg/dist-src/with-defaults.js
-var import_request2 = __nccwpck_require__(6234);
-
-// pkg/dist-src/graphql.js
-var import_request = __nccwpck_require__(6234);
-
-// pkg/dist-src/error.js
-function _buildMessageForResponseErrors(data) {
-  return `Request failed due to following response errors:
-` + data.errors.map((e) => ` - ${e.message}`).join("\n");
-}
-var GraphqlResponseError = class extends Error {
-  constructor(request2, headers, response) {
-    super(_buildMessageForResponseErrors(response));
-    this.request = request2;
-    this.headers = headers;
-    this.response = response;
-    this.name = "GraphqlResponseError";
-    this.errors = response.errors;
-    this.data = response.data;
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-  }
-};
-
-// pkg/dist-src/graphql.js
-var NON_VARIABLE_OPTIONS = [
-  "method",
-  "baseUrl",
-  "url",
-  "headers",
-  "request",
-  "query",
-  "mediaType"
-];
-var FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
-var GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
-function graphql(request2, query, options) {
-  if (options) {
-    if (typeof query === "string" && "query" in options) {
-      return Promise.reject(
-        new Error(`[@octokit/graphql] "query" cannot be used as variable name`)
-      );
-    }
-    for (const key in options) {
-      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
-        continue;
-      return Promise.reject(
-        new Error(
-          `[@octokit/graphql] "${key}" cannot be used as variable name`
-        )
-      );
-    }
-  }
-  const parsedOptions = typeof query === "string" ? Object.assign({ query }, options) : query;
-  const requestOptions = Object.keys(
-    parsedOptions
-  ).reduce((result, key) => {
-    if (NON_VARIABLE_OPTIONS.includes(key)) {
-      result[key] = parsedOptions[key];
-      return result;
-    }
-    if (!result.variables) {
-      result.variables = {};
-    }
-    result.variables[key] = parsedOptions[key];
-    return result;
-  }, {});
-  const baseUrl = parsedOptions.baseUrl || request2.endpoint.DEFAULTS.baseUrl;
-  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
-    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
-  }
-  return request2(requestOptions).then((response) => {
-    if (response.data.errors) {
-      const headers = {};
-      for (const key of Object.keys(response.headers)) {
-        headers[key] = response.headers[key];
-      }
-      throw new GraphqlResponseError(
-        requestOptions,
-        headers,
-        response.data
-      );
-    }
-    return response.data.data;
-  });
-}
-
-// pkg/dist-src/with-defaults.js
-function withDefaults(request2, newDefaults) {
-  const newRequest = request2.defaults(newDefaults);
-  const newApi = (query, options) => {
-    return graphql(newRequest, query, options);
-  };
-  return Object.assign(newApi, {
-    defaults: withDefaults.bind(null, newRequest),
-    endpoint: newRequest.endpoint
-  });
-}
-
-// pkg/dist-src/index.js
-var graphql2 = withDefaults(import_request3.request, {
-  headers: {
-    "user-agent": `octokit-graphql.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`
-  },
-  method: "POST",
-  url: "/graphql"
-});
-function withCustomRequest(customRequest) {
-  return withDefaults(customRequest, {
-    method: "POST",
-    url: "/graphql"
-  });
-}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (0);
 

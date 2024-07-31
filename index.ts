@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import type { GraphQlQueryResponseData } from "@octokit/graphql";
 
 async function main() {
   try {
@@ -50,8 +51,8 @@ async function main() {
       throw new Error(`Failed to initialize octokit: ${kit}`);
     }
 
-    const query = `query getBranchProtections {
-  repository(owner: "${owner}", name: "${repository}"){
+    const query = `query getBranchProtections($owner: String!, $repository: String!){
+  repository(owner: $owner, name: $repository){
     branchProtectionRules(first: 100){
       nodes{
         lockBranch
@@ -67,28 +68,61 @@ async function main() {
   }
 }`;
 
-    core.notice(query);
+    core.debug(`Query getBranchProtections: ${query} ${owner} ${repository}`);
 
-    const response = await kit.graphql(query);
+    const response: GraphQlQueryResponseData = await kit.graphql(query, {
+      owner,
+      repository,
+    });
 
-    core.notice(`Branch Protection JSON: ${JSON.stringify(response, null, 2)}`);
+    core.debug(`Branch Protection JSON: ${JSON.stringify(response, null, 2)}`);
 
-    /*
-    core.debug(
-      `Branch Protection JSON: ${JSON.stringify(branchProtection, null, 2)}`,
-    );
-
-    if (!branchProtection) {
+    if (!response) {
       throw new Error("Branch protection not found.");
     }
 
-    if (!branchProtection.lock_branch) {
-      throw new Error("Lock Branch Setting not found.");
+    if (!response.repository) {
+      throw new Error("Repository not found.");
     }
 
-    if (branchProtection.lock_branch.enabled === lock) {
+    if (!response.repository.branchProtectionRules) {
+      throw new Error("Branch protection rules not found.");
+    }
+
+    if (!response.repository.branchProtectionRules.nodes) {
+      throw new Error("Branch protection rules nodes not found.");
+    }
+
+    if (!response.repository.branchProtectionRules.nodes.length) {
+      throw new Error("Branch protection rules nodes empty.");
+    }
+
+    let alreadyLocked;
+    let branchProtectionId;
+
+    for (const rule of response.repository.branchProtectionRules.nodes) {
+      if (rule.matchingRefs.nodes.some((n) => n.name === branch)) {
+        if (!("lockBranch" in rule)) {
+          throw new Error("Lock Branch Setting not found.");
+        }
+
+        if (!("id" in rule)) {
+          throw new Error("Branch Protection ID not found.");
+        }
+
+        alreadyLocked = rule.lockBranch;
+        branchProtectionId = rule.id;
+        break;
+      }
+    }
+
+    if (!branchProtectionId) {
+      throw new Error("Branch protection ID not found.");
+    }
+
+    if (alreadyLocked === lock) {
       core.notice(
-        `Branch is currently locked=${branchProtection.lock_branch.enabled} which is the same as lock setting requested=${lock}. Stopping here.`,
+        `Branch is currently locked=${alreadyLocked} which is the same as lock setting requested=${lock}. Stopping here.`,
       );
       core.setOutput("changed", false);
       core.setOutput("success", true);
@@ -96,30 +130,22 @@ async function main() {
       return;
     }
 
-    const update = ;
-
-    // @ts-expect-error
-    update.lock_branch = lock;
-
-    core.debug(`Update JSON: ${JSON.stringify(update, null, 2)}`);
-
-    // @ts-expect-error
-    const { data } = await kit.graphql(`
-    `, {
-      owner,
-      repo: repository,
-      branch,
-			lock_branch: lock,
-    });
+    const data = await kit.graphql(`
+    mutation updateBranchProtections {
+  updateBranchProtectionRule(input: { lockBranch: ${lock}, branchProtectionRuleId: "${branchProtectionId}" }) {
+    branchProtectionRule{
+      lockBranch
+      id
+    }
+  }
+}
+    `);
 
     core.debug(`Update Response JSON: ${JSON.stringify(data, null, 2)}`);
 
-    core.notice(`Branch is now locked=${data.lock_branch?.enabled}`);
     core.setOutput("changed", true);
     core.setOutput("success", true);
     core.setOutput("failure", false);
-
-    */
   } catch (error) {
     core.setOutput("changed", false);
     core.setOutput("success", false);
