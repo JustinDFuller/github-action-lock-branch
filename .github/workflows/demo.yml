@@ -30,6 +30,7 @@ jobs:
         id: unlock
         uses: ./
         with:
+          branch: main
           token: ${{ secrets.LOCK_TOKEN }}
           lock: false
 

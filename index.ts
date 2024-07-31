@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import type { GraphQlQueryResponseData } from "@octokit/graphql";
 
 async function main() {
   try {
@@ -50,29 +51,80 @@ async function main() {
       throw new Error(`Failed to initialize octokit: ${kit}`);
     }
 
-    const { data: branchProtection } = await kit.rest.repos.getBranchProtection(
-      {
-        owner,
-        repo: repository,
-        branch,
-      },
-    );
+    const query = `query getBranchProtections($owner: String!, $repository: String!){
+  repository(owner: $owner, name: $repository){
+    branchProtectionRules(first: 100){
+      nodes{
+        lockBranch
+        id
+        matchingRefs(first: 100){
+          nodes{
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}`;
 
-    core.debug(
-      `Branch Protection JSON: ${JSON.stringify(branchProtection, null, 2)}`,
-    );
+    core.debug(`Query getBranchProtections: ${query} ${owner} ${repository}`);
 
-    if (!branchProtection) {
+    const response: GraphQlQueryResponseData = await kit.graphql(query, {
+      owner,
+      repository,
+    });
+
+    core.debug(`Branch Protection JSON: ${JSON.stringify(response, null, 2)}`);
+
+    if (!response) {
       throw new Error("Branch protection not found.");
     }
 
-    if (!branchProtection.lock_branch) {
-      throw new Error("Lock Branch Setting not found.");
+    if (!response.repository) {
+      throw new Error("Repository not found.");
     }
 
-    if (branchProtection.lock_branch.enabled === lock) {
+    if (!response.repository.branchProtectionRules) {
+      throw new Error("Branch protection rules not found.");
+    }
+
+    if (!response.repository.branchProtectionRules.nodes) {
+      throw new Error("Branch protection rules nodes not found.");
+    }
+
+    if (!response.repository.branchProtectionRules.nodes.length) {
+      throw new Error("Branch protection rules nodes empty.");
+    }
+
+    let alreadyLocked;
+    let branchProtectionId;
+
+    for (const rule of response.repository.branchProtectionRules.nodes) {
+      if (rule.matchingRefs.nodes.some((n) => n.name === branch)) {
+        if (!("lockBranch" in rule)) {
+          throw new Error("Lock Branch Setting not found.");
+        }
+
+        if (!("id" in rule)) {
+          throw new Error("Branch Protection ID not found.");
+        }
+
+        alreadyLocked = rule.lockBranch;
+        branchProtectionId = rule.id;
+        break;
+      }
+    }
+
+    if (!branchProtectionId) {
+      throw new Error(
+        `Branch protection ID not found. For branch=${branch} in repository=${repository} owner=${owner}`,
+      );
+    }
+
+    if (alreadyLocked === lock) {
       core.notice(
-        `Branch is currently locked=${branchProtection.lock_branch.enabled} which is the same as lock setting requested=${lock}. Stopping here.`,
+        `Branch is currently locked=${alreadyLocked} which is the same as lock setting requested=${lock}. Stopping here.`,
       );
       core.setOutput("changed", false);
       core.setOutput("success", true);
@@ -80,45 +132,19 @@ async function main() {
       return;
     }
 
-    const update = {
-      owner,
-      repo: repository,
-      branch,
-      ...branchProtection,
-    };
-
-    normalize(update);
-
-    if (!update.restrictions) {
-      update.restrictions = null;
+    const data = await kit.graphql(`
+    mutation updateBranchProtections {
+  updateBranchProtectionRule(input: { lockBranch: ${lock}, branchProtectionRuleId: "${branchProtectionId}" }) {
+    branchProtectionRule{
+      lockBranch
+      id
     }
-
-    if (!update.required_status_checks) {
-      update.required_status_checks = null;
-    } else if (update.required_status_checks.contexts) {
-      // Obsolete setting returned by GET but not allowed in POST
-      update.required_status_checks.contexts = [];
-    }
-
-    if (update.required_status_checks.checks) {
-      for (const check of update.required_status_checks.checks) {
-        if (check.app_id == null) {
-          delete check.app_id;
-        }
-      }
-    }
-
-    // @ts-expect-error
-    update.lock_branch = lock;
-
-    core.debug(`Update JSON: ${JSON.stringify(update, null, 2)}`);
-
-    // @ts-expect-error
-    const { data } = await kit.rest.repos.updateBranchProtection(update);
+  }
+}
+    `);
 
     core.debug(`Update Response JSON: ${JSON.stringify(data, null, 2)}`);
 
-    core.notice(`Branch is now locked=${data.lock_branch?.enabled}`);
     core.setOutput("changed", true);
     core.setOutput("success", true);
     core.setOutput("failure", false);
@@ -127,35 +153,6 @@ async function main() {
     core.setOutput("success", false);
     core.setOutput("failure", true);
     core.setFailed(error.message);
-  }
-}
-
-// The response for GET /repos/{owner}/{repo}/branches/{branch}/protection
-// Cannot be passed directly back into the PUT request to /repos/{owner}/{repo}/branches/{branch}/protection.
-// Instead, we need to normalize the JSON to make it compliant with the PUT request.
-function normalize(obj) {
-  for (var key in obj) {
-    var value = obj[key];
-    // 1. Remove all extra _url keys.
-    if (typeof value === "object") {
-      if (key.endsWith("_url")) {
-        delete obj[key];
-        // 2. Convert enabled to boolean.
-      } else if (value != null && "enabled" in value) {
-        obj[key] = value.enabled;
-        // 3. Remove empty arrays.
-      } else if (Array.isArray(value)) {
-        if (value.length === 0) {
-          delete obj[key];
-        }
-      }
-      // 4. Remove empty objects.
-      if (value !== null && Object.keys(value).length === 0) {
-        delete obj[key];
-      }
-      // recurse
-      normalize(value);
-    }
   }
 }
 
