@@ -117,7 +117,9 @@ async function main() {
     }
 
     if (!branchProtectionId) {
-      throw new Error("Branch protection ID not found.");
+      throw new Error(
+        `Branch protection ID not found. For branch=${branch} in repository=${repository} owner=${owner}`,
+      );
     }
 
     if (alreadyLocked === lock) {
