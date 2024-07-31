@@ -50,9 +50,8 @@ async function main() {
       throw new Error(`Failed to initialize octokit: ${kit}`);
     }
 
-    const response = await kit.graphql(
-      `query getBranchProtections {
-  repository(owner: "${owner}", name: ${repository}){
+    const query = `query getBranchProtections {
+  repository(owner: "${owner}", name: "${repository}"){
     branchProtectionRules {
       nodes{
         lockBranch
@@ -66,8 +65,11 @@ async function main() {
       }
     }
   }
-}`,
-    );
+}`;
+
+    core.notice(query);
+
+    const response = await kit.graphql(query);
 
     core.notice(`Branch Protection JSON: ${JSON.stringify(response, null, 2)}`);
 

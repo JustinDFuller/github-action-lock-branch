@@ -40,7 +40,7 @@ var core = require("@actions/core");
 var github = require("@actions/github");
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, lock, repository, owner, branch, kit, response, error_1;
+        var token, lock, repository, owner, branch, kit, query, response, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -82,7 +82,9 @@ function main() {
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));
                     }
-                    return [4 /*yield*/, kit.graphql("query getBranchProtections {\n  repository(owner: \"".concat(owner, "\", name: ").concat(repository, "){\n    branchProtectionRules {\n      nodes{\n        lockBranch\n        id\n        matchingRefs{\n          nodes{\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}"))];
+                    query = "query getBranchProtections {\n  repository(owner: \"".concat(owner, "\", name: \"").concat(repository, "\"){\n    branchProtectionRules {\n      nodes{\n        lockBranch\n        id\n        matchingRefs{\n          nodes{\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}");
+                    core.notice(query);
+                    return [4 /*yield*/, kit.graphql(query)];
                 case 1:
                     response = _a.sent();
                     core.notice("Branch Protection JSON: ".concat(JSON.stringify(response, null, 2)));
