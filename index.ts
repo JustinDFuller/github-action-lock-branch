@@ -134,14 +134,14 @@ async function main() {
 // Cannot be passed directly back into the PUT request to /repos/{owner}/{repo}/branches/{branch}/protection.
 // Instead, we need to normalize the JSON to make it compliant with the PUT request.
 function normalize(obj) {
-  for (const key in obj) {
-    const value = obj[key];
+  for (var key in obj) {
+    var value = obj[key];
     // 1. Remove all extra _url keys.
     if (typeof value === "object") {
       if (key.endsWith("_url")) {
         delete obj[key];
         // 2. Convert enabled to boolean.
-      } else if ("enabled" in value) {
+      } else if (value != null && "enabled" in value) {
         obj[key] = value.enabled;
         // 3. Remove empty arrays.
       } else if (Array.isArray(value)) {
@@ -149,12 +149,10 @@ function normalize(obj) {
           delete obj[key];
         }
       }
-
       // 4. Remove empty objects.
-      if (Object.keys(value).length === 0) {
+      if (value !== null && Object.keys(value).length === 0) {
         delete obj[key];
       }
-
       // recurse
       normalize(value);
     }

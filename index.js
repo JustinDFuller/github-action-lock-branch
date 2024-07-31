@@ -170,7 +170,7 @@ function normalize(obj) {
                 delete obj[key];
                 // 2. Convert enabled to boolean.
             }
-            else if ("enabled" in value) {
+            else if (value != null && "enabled" in value) {
                 obj[key] = value.enabled;
                 // 3. Remove empty arrays.
             }
@@ -180,7 +180,7 @@ function normalize(obj) {
                 }
             }
             // 4. Remove empty objects.
-            if (Object.keys(value).length === 0) {
+            if (value !== null && Object.keys(value).length === 0) {
                 delete obj[key];
             }
             // recurse
