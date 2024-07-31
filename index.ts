@@ -56,7 +56,7 @@ async function main() {
       nodes{
         lockBranch
         id
-        matchingRefs{
+        matchingRefs(first: 100){
           nodes{
             id
             name

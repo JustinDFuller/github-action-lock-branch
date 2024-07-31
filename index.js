@@ -82,7 +82,7 @@ function main() {
                     if (!kit) {
                         throw new Error("Failed to initialize octokit: ".concat(kit));
                     }
-                    query = "query getBranchProtections {\n  repository(owner: \"".concat(owner, "\", name: \"").concat(repository, "\"){\n    branchProtectionRules(first: 100){\n      nodes{\n        lockBranch\n        id\n        matchingRefs{\n          nodes{\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}");
+                    query = "query getBranchProtections {\n  repository(owner: \"".concat(owner, "\", name: \"").concat(repository, "\"){\n    branchProtectionRules(first: 100){\n      nodes{\n        lockBranch\n        id\n        matchingRefs(first: 100){\n          nodes{\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}");
                     core.notice(query);
                     return [4 /*yield*/, kit.graphql(query)];
                 case 1:
