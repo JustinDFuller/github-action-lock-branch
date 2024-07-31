@@ -68,9 +68,15 @@ async function main() {
   }
 }`;
 
+    const graphqlWithAuth = kit.graphql.defaults({
+      headers: {
+        authorization: `token ${token}`,
+      },
+    });
+
     core.debug(`Query getBranchProtections: ${query} ${owner} ${repository}`);
 
-    const response: GraphQlQueryResponseData = await kit.graphql(query, {
+    const response: GraphQlQueryResponseData = await graphqlWithAuth(query, {
       owner,
       repository,
     });
@@ -132,7 +138,7 @@ async function main() {
       return;
     }
 
-    const data = await kit.graphql(`
+    const data = await graphqlWithAuth(`
     mutation updateBranchProtections {
   updateBranchProtectionRule(input: { lockBranch: ${lock}, branchProtectionRuleId: "${branchProtectionId}" }) {
     branchProtectionRule{
