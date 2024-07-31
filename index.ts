@@ -52,7 +52,7 @@ async function main() {
 
     const query = `query getBranchProtections {
   repository(owner: "${owner}", name: "${repository}"){
-    branchProtectionRules {
+    branchProtectionRules(first: 100){
       nodes{
         lockBranch
         id
